@@ -1,0 +1,191 @@
+/* 
+  
+  Cleaning Data in SQL Queries
+
+  */
+
+  SELECT *  
+  FROM [Data Cleaning in MySQL].dbo.Nashville_Housing
+
+
+-------------------------------------------------------------------------------------------------------------------
+
+  --Standardize Sale Format
+
+  SELECT SaleDate, Convert (Date, SaleDate)
+  FROM [Data Cleaning in MySQL].dbo.Nashville_Housing
+
+  ALTER TABLE Nashville_Housing
+  ADD SaleDateConverted Date
+
+  UPDATE Nashville_Housing
+  SET SaleDate = Convert (Date, SaleDate)
+
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------
+
+  --Populate Property Address Data
+
+  SELECT *
+  FROM [Data Cleaning in MySQL].dbo.Nashville_Housing
+  --Where PropertyAddress is null
+  order by ParcelID
+
+  SELECT a.ParcelID, a.PropertyAddress, b.ParcelID, b.PropertyAddress, ISNULL(a.PropertyAddress, b.PropertyAddress)
+  FROM [Data Cleaning in MySQL].dbo.Nashville_Housing a
+  JOIN [Data Cleaning in MySQL].dbo.Nashville_Housing b
+      ON a.ParcelID=b.ParcelID
+	  AND a.[UniqueID ] <> b.[UniqueID ]
+  WHERE a.PropertyAddress is null
+
+  UPDATE a
+  SET PropertyAddress = ISNULL(a.PropertyAddress, b.PropertyAddress)
+  FROM [Data Cleaning in MySQL].dbo.Nashville_Housing a
+  JOIN [Data Cleaning in MySQL].dbo.Nashville_Housing b
+      ON a.ParcelID=b.ParcelID
+	  AND a.[UniqueID ] <> b.[UniqueID ]
+  WHERE a.PropertyAddress is null
+
+
+
+
+
+---------------------------------------------------------------------------------------------------------------------
+
+  --Breaking Out Address into Individual Columns (Address, City, State)
+
+  SELECT *
+  FROM [Data Cleaning in MySQL].dbo.Nashville_Housing
+  --Where PropertyAddress is null
+  --order by ParcelID
+
+  SELECT
+  SUBSTRING(PropertyAddress, 1, CHARINDEX(',', PropertyAddress) -1) AS ADDRESS
+  , SUBSTRING(PropertyAddress, CHARINDEX(',', PropertyAddress) +1, LEN(PropertyAddress)) AS ADDRESS
+  FROM [Data Cleaning in MySQL].dbo.Nashville_Housing
+
+
+  ALTER TABLE Nashville_Housing
+  ADD PropertySplitAddress Nvarchar(255);
+
+  UPDATE Nashville_Housing
+  SET PropertySplitAddress = SUBSTRING(PropertyAddress, 1, CHARINDEX(',', PropertyAddress) -1)
+
+  
+  ALTER TABLE Nashville_Housing
+  ADD PropertySplitCity Nvarchar(255);
+
+  UPDATE Nashville_Housing
+  SET PropertySplitCity = SUBSTRING(PropertyAddress, CHARINDEX(',', PropertyAddress) +1, LEN(PropertyAddress))
+
+
+  SELECT *
+  FROM [Data Cleaning in MySQL].dbo.Nashville_Housing
+
+  SELECT OwnerAddress
+  FROM [Data Cleaning in MySQL].dbo.Nashville_Housing
+
+  SELECT
+  PARSENAME (REPLACE(OwnerAddress, ',', '.') , 3)
+  ,PARSENAME (REPLACE(OwnerAddress, ',', '.') , 2)
+  ,PARSENAME (REPLACE(OwnerAddress, ',', '.') , 1)
+  FROM [Data Cleaning in MySQL].dbo.Nashville_Housing
+
+
+  ALTER TABLE Nashville_Housing
+  ADD OwnerSplitAddress Nvarchar(255);
+
+  UPDATE Nashville_Housing
+  SET OwnerSplitAddress = PARSENAME (REPLACE(OwnerAddress, ',', '.') , 3)
+
+
+  ALTER TABLE Nashville_Housing
+  ADD OwnerSplitCity Nvarchar(255);
+
+  UPDATE Nashville_Housing
+  SET OwnerSplitCity = PARSENAME (REPLACE(OwnerAddress, ',', '.') , 2)
+
+
+  ALTER TABLE Nashville_Housing
+  ADD OwnerSplitState Nvarchar(255);
+
+  UPDATE Nashville_Housing
+  SET OwnerSplitState = PARSENAME (REPLACE(OwnerAddress, ',', '.') , 1)
+
+  SELECT *
+  FROM [Data Cleaning in MySQL].dbo.Nashville_Housing
+
+
+
+
+
+---------------------------------------------------------------------------------------------------------------------
+
+  --Change Y and N to Yes and No in "Sold as Vacant" field
+
+SELECT DISTINCT(SoldAsVacant), COUNT(SoldAsVacant)
+FROM [Data Cleaning in MySQL].dbo.Nashville_Housing
+GROUP BY SoldAsVacant
+ORDER BY 2
+
+
+SELECT SoldAsVacant
+, CASE WHEN SoldAsVacant = 'Y' THEN 'Yes'
+       WHEN SoldAsVacant = 'N' Then 'NO'
+	   ELSE SoldAsVacant
+	   END
+FROM [Data Cleaning in MySQL].dbo.Nashville_Housing
+
+UPDATE [Data Cleaning in MySQL].dbo.Nashville_Housing
+SET SoldAsVacant = CASE WHEN SoldAsVacant = 'Y' THEN 'Yes'
+       WHEN SoldAsVacant = 'N' Then 'NO'
+	   ELSE SoldAsVacant
+	   END
+
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------
+
+--Remove Duplicates
+
+WITH RowNumCTE AS(
+SELECT *,
+     ROW_NUMBER() OVER(
+	 PARTITION BY ParcelID,
+	 PropertyAddress,
+	 SalePrice,
+	 SaleDate,
+	 LegalReference
+	 ORDER BY
+	    UniqueID
+		)row_num
+
+FROM [Data Cleaning in MySQL].dbo.Nashville_Housing
+
+)
+DELETE
+FROM RowNumCTE
+WHERE row_num > 1
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------
+
+--Delete Unused Columns
+
+SELECT *
+FROM [Data Cleaning in MySQL].dbo.Nashville_Housing
+
+ALTER TABLE [Data Cleaning in MySQL].dbo.Nashville_Housing
+DROP COLUMN PropertyAddress, OwnerAddress, TaxDistrict
+
+ALTER TABLE [Data Cleaning in MySQL].dbo.Nashville_Housing
+DROP COLUMN SaleDate
+
+
