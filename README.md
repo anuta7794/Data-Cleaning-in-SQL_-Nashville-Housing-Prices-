@@ -1,8 +1,8 @@
-## **Data Cleaning in SQL "Nashville Housing"**
+# **Data Cleaning in SQL "Nashville Housing"**
 
 In this project, I performed an exploratory analysis on the "Nashville Housing Data" database in SQL Server Management Studio. The data was retrieved from (https://www.kaggle.com/datasets/tmthyjames/nashville-housing-data). The main goal of this project was to clean this data to make it more friendly to use.  
 
-# **Steps:**
+### **Steps:**
 
 1) **_Standardize Sale Format._**
 
