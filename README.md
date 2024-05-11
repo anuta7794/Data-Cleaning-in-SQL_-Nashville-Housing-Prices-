@@ -9,6 +9,9 @@ In this project, I performed an exploratory analysis on the "Nashville Housing D
 I standardized the data format using **CONVERT**.
 
 
+
+
+
 2) **_Populate Property Address Data._**
 
 There were **NULL** values in the “Property Address” column. I populated it with property address values using **self-JOIN** and **ISNULL** function. 
